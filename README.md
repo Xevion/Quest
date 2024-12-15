@@ -1,20 +1,15 @@
-# Quest
+# Rebirth
 
-A generic, Unity-based dungeon-crawler, with a focus on procedural maps & multiplayer support.
+A simple puzzle game about growth.
 
-- [ ] Graphics
-  - [ ] Simple Sprites
-  - [ ] Basic Shaders
-- [ ] Gameplay
-  - [ ] Combat
-    - [ ] Melee Combat
-    - [ ] Ranged Combat
-    - [ ] Aura Skills
-  - [ ] Item Pickups
-    - [ ] Limited Damage Boost
-    - [ ] Health Boost
-    - [ ] Speed Boost
-- [ ] Multiplayer
-  - [ ] Self Hosted Server-Client
-  - [ ] Simple Chat System
-- [ ] Map Generation
+## Control Design
+
+- Camera
+  - WASD, Arrow keys to move.
+  - Right click, drag to move.
+  - Scroll wheel to zoom. Mouse position dictates zoom center.
+- Units
+  - Left click on/nearby a planet.
+  - Scroll to lower/raise the total percentage of units.
+  - Drag to another planet, release to send units.
+  - Until units arrive, they won't be selectable or part of the usable population on a planet.
