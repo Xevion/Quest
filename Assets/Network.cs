@@ -53,7 +53,10 @@ public class Network : MonoBehaviour
     {
         _planets = new List<Planet>(FindObjectsOfType<Planet>());
 
-        AddPlanet();
+        if (_planets.Count == 0)
+        {
+            AddPlanet();
+        }
     }
 
     void Update()

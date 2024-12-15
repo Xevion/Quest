@@ -6,7 +6,9 @@ public class Planet : MonoBehaviour
 {
     private MeshFilter _meshFilter;
     private LineRenderer _lineRenderer;
+    private CircleCollider2D _circleCollider;
     private Network _network;
+    private HashSet<Unit> _units;
 
     [SerializeField] public HashSet<Planet> neighbors;
 
@@ -20,10 +22,34 @@ public class Planet : MonoBehaviour
     {
         _lineRenderer = gameObject.GetComponent<LineRenderer>();
         _network = FindObjectOfType<Network>();
+        _units = new HashSet<Unit>();
     }
 
     void OnEnable()
     {
+    }
+
+    void OnMouseDown()
+    {
+        SpawnUnit();
+    }
+
+    public Vector2 GetSurfacePosition(float angle, float distance = 0)
+    {
+        var radius = Size / 100f + distance;
+        var theta = angle * Mathf.Deg2Rad;
+        return new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
+    }
+
+    void SpawnUnit()
+    {
+        var unitPrefab = Resources.Load<GameObject>("BaseUnit");
+        var unitObject = Instantiate(unitPrefab);
+        unitObject.transform.position = transform.position;
+        unitObject.transform.parent = transform;
+        _units.Add(unitObject.GetComponent<Unit>());
+        Debug.Log("Spawned unit " + unitObject.GetComponent<Unit>().GetHashCode());
+        unitObject.name = "Unit " + _units.Count;
     }
 
     bool IsConnected(Planet other)
@@ -34,6 +60,11 @@ public class Planet : MonoBehaviour
     private void OnDestroy()
     {
         _network.Destroyed(this);
+    }
+
+    public void UnitDestroyed(Unit unit)
+    {
+        _units.Remove(unit);
     }
 
     void Connect(params Planet[] others)
@@ -49,10 +80,12 @@ public class Planet : MonoBehaviour
     {
         _meshFilter = gameObject.GetComponent<MeshFilter>();
         _lineRenderer = gameObject.GetComponent<LineRenderer>();
+        _circleCollider = gameObject.GetComponent<CircleCollider2D>();
 
         _lineRenderer.widthMultiplier = edgeWidth;
         _lineRenderer.positionCount = 0;
         _lineRenderer.loop = true;
+        _lineRenderer.useWorldSpace = false;
         _lineRenderer.startColor = edgeColor;
         _lineRenderer.endColor = edgeColor;
         _lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
@@ -85,11 +118,11 @@ public class Planet : MonoBehaviour
             colors = colors
         };
 
-        Debug.Log($"{triangles.Length} triangles");
-
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
         mesh.RecalculateTangents();
+
+        _circleCollider.radius = radius;
 
         _meshFilter.mesh = mesh;
         _lineRenderer.positionCount = mesh.vertices.Length;
