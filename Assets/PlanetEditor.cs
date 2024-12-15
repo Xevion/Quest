@@ -22,12 +22,14 @@ public class PlanetEditor : Editor
             return;
         }
 
+        var changed = false;
+
         // Check if size changed
         var newSize = EditorGUILayout.Slider("Size", planet.Size, 1f, 300f);
         if (newSize != planet.Size)
         {
             planet.Size = newSize;
-            planet.GenerateLine();
+            changed = true;
         }
 
         // Check if bulbs changed
@@ -35,7 +37,7 @@ public class PlanetEditor : Editor
         if (newBulbs != planet.Bulbs)
         {
             planet.Bulbs = newBulbs;
-            planet.GenerateLine();
+            changed = true;
         }
 
         // Check if edge width changed
@@ -43,8 +45,10 @@ public class PlanetEditor : Editor
         if (newEdgeWidth != planet.edgeWidth)
         {
             planet.edgeWidth = newEdgeWidth;
-            planet.GenerateLine();
+            changed = true;
         }
+
+        if (changed) planet.Render();
 
         DrawDefaultInspector();
     }

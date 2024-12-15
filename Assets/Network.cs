@@ -7,10 +7,29 @@ public class Network : MonoBehaviour
     private List<Planet> _planets;
     public Planet planetPrefab;
 
+    public void EnsureReady()
+    {
+        if (_planets == null)
+        {
+            _planets = new List<Planet>(FindObjectsOfType<Planet>());
+        }
+        else
+        {
+            _planets.Clear();
+            _planets.AddRange(FindObjectsOfType<Planet>());
+        }
+    }
+
+    public void Awake()
+    {
+        EnsureReady();
+    }
+
     public void AddPlanet()
     {
+        EnsureReady();
         var planet = Instantiate(planetPrefab);
-        planet.GenerateLine();
+        planet.Render();
         planet.name = $"Planet {_planets.Count + 1}";
         planet.transform.parent = transform;
         _planets.Add(planet);
