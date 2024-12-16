@@ -43,7 +43,6 @@ public class Planet : MonoBehaviour
 
     void OnMouseDown()
     {
-        Debug.Log($"Clicked on {name}");
         SpawnUnit();
     }
 
@@ -51,7 +50,7 @@ public class Planet : MonoBehaviour
     {
         var radius = Size / 100f + distance;
         var theta = angle * Mathf.Deg2Rad;
-        return new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
+        return (Vector2)transform.position + new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
     }
 
     public float GetUnitAngle(Unit unit)
@@ -64,19 +63,19 @@ public class Planet : MonoBehaviour
     {
         var unitPrefab = Resources.Load<GameObject>("BaseUnit");
         var unitObject = Instantiate(unitPrefab);
-        unitObject.transform.position = transform.position;
-        Debug.Log($"Spawned unit at {unitObject.transform.position} for planet {name}");
-        unitObject.transform.parent = transform;
-        var unit = unitObject.GetComponent<Unit>();
-        _units.Add(unit);
-        unitObject.name = "Unit " + _units.Count;
 
+        var unit = unitObject.GetComponent<Unit>();
+        unit.transform.SetParent(transform);
+        unit.transform.position = GetSurfacePosition(UnityEngine.Random.Range(0, 360), 0.3f);
+
+        _units.Add(unit);
+        unit.name = "Unit " + _units.Count;
 
         _tree.SetCount(_tree.Count + 1);
         var index = _tree.Count - 1;
         unit.TreeIndex = index;
 
-        _tree.Points[index] = new Vector2(unitObject.transform.position.x, unitObject.transform.position.y);
+        _tree.Points[index] = new Vector2(unit.transform.position.x, unit.transform.position.y);
         _tree.Rebuild();
 
     }

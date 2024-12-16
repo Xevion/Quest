@@ -26,9 +26,6 @@ public class Unit : MonoBehaviour
         };
         RotationSpeed = Random.value > 0.5f ? 1 : -1 * Random.Range(0.8f, 1.2f) * 4f;
         BobbingOffset = Random.Range(0, (float)(2 * Math.PI));
-
-        transform.position = planet.GetSurfacePosition(Random.Range(0, 360), 0.3f);
-        Debug.Log($"{name} belongs to {planet.name}");
     }
 
     void Update()
