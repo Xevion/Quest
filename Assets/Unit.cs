@@ -1,74 +1,145 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Quaternion = UnityEngine.Quaternion;
 using Random = UnityEngine.Random;
+using Vector2 = UnityEngine.Vector2;
+using Vector3 = UnityEngine.Vector3;
 
 public class Unit : MonoBehaviour
 {
     private Planet planet;
-    private Vector2 planetaryVelocity; // X: rotational, Y: altitude
     public float edgeWidth;
     public Color fillColor = Color.white;
     public Color edgeColor = Color.white;
     public float Size;
     public int TreeIndex;
-    private float RotationSpeed;
-    private float BobbingOffset;
+    private Vector2 _velocity = Vector3.up;
+    private float timeOffset;
 
     void Start()
     {
         Render();
 
+        _velocity = Random.insideUnitCircle.normalized;
         planet = GetComponentInParent<Planet>();
-        planetaryVelocity = new Vector2(0, 0)
-        {
-            x = (Random.value > 0.5f ? 1 : -1) * 32 * Random.Range(0.8f, 1.2f),
-        };
-        RotationSpeed = Random.value > 0.5f ? 1 : -1 * Random.Range(0.8f, 1.2f) * 4f;
-        BobbingOffset = Random.Range(0, (float)(2 * Math.PI));
+        timeOffset = Random.Range(0, (float)(2 * Math.PI));
+    }
+
+    private Vector2 SteerTowards(Vector2 vector)
+    {
+        Vector2 v = vector.normalized * 1 - _velocity;
+        var clamped = Vector2.ClampMagnitude(v, 1);
+        Debug.Log($"SteerTowards {planet.name}/{name} Vector: {vector}, Modified Vector: {v}, Cur Velocity: {_velocity}, Clamped Vector: {clamped}");
+        return clamped;
     }
 
     void Update()
     {
-        // Rotate itself slightly
-        transform.Rotate(new Vector3(0, 0, Time.deltaTime * RotationSpeed));
+        var acceleration = Vector2.zero;
 
-        transform.Translate(Vector3.up * Time.deltaTime);
+        // var upcomingAngle = planet.GetAngle(transform.position + (Vector3)_velocity);
+        // var angleTarget = planet.GetSurfacePosition(upcomingAngle, 0.4f);
+        // acceleration -= angleTarget;
 
-        // Get distance from planet
+        var targetDistance = (Mathf.Sin(Time.time * 0.5f + timeOffset) + 1) / 2f;
+        var surfaceTarget = planet.GetSurfacePosition(planet.GetAngle((Vector2)transform.position + _velocity), targetDistance);
+        var surfaceTargetVector = ((Vector2)transform.position - surfaceTarget).normalized;
         var distance = Vector2.Distance(transform.position, planet.transform.position) - planet.Size / 100f;
-        var maxDistance = 1f;
-        var minDistance = 0.2f;
+        // var vectorMultiplier = Mathf.LerpUnclamped(1f, 1.5f, 2f * Math.Abs(targetDistance - distance) / targetDistance);
+        // var vectorMultiplier = Mathf.LerpUnclamped(0.5f, 1f, distance < targetDistance ? 0.3f / distance : distance / 0.2f);
+        surfaceTargetVector *= 1.5f;
+        acceleration -= surfaceTargetVector;
 
-        bool isTooFar = distance > maxDistance;
-        bool isTooClose = distance < minDistance;
-
-        // If incorrect distance, rotate
-        if (isTooFar || isTooClose)
+        if (TreeIndex == 0)
         {
-            var directionToPlanet = (planet.transform.position - transform.position).normalized;
-            var projectionOnRight = Vector3.Dot(directionToPlanet, transform.right);
-            var planetOnRight = projectionOnRight < 0;
-
-            var direction = planetOnRight == isTooFar ? 1 : -1;
-            var turningSpeed = 200f;
-            if (isTooClose) turningSpeed *= 3;
-            else if (isTooFar) turningSpeed *= (distance - maxDistance);
-            transform.Rotate(new Vector3(0, 0, direction * turningSpeed * Time.deltaTime));
-
-            // var angle = Mathf.Atan2(transform.position.y, transform.position.x) * Mathf.Rad2Deg;
-            // angle += Random.Range(-10, 10);
-            // transform.rotation = Quaternion.Euler(0, 0, angle);
+            Debug.Log($"{planet.name} Acceleration: {acceleration}, Velocity: {_velocity}");
         }
 
+        Vector2 newVelocity = _velocity + acceleration * Time.deltaTime;
+        float speed = newVelocity.magnitude;
+        Vector2 dir = newVelocity / speed;
+        speed = Mathf.Clamp(speed, 0.5f, 1.5f);
+        _velocity = dir * speed;
+
+        var results = new List<int>();
+        planet.Query.Radius(planet.Tree, transform.position, 0.1f, results);
+        Vector2 away = Vector2.zero;
+        foreach (var unitIndex in results)
+        {
+            if (unitIndex == TreeIndex) continue;
+            var diff = (Vector2)(planet.Tree.Points[unitIndex] - transform.position);
+            away -= diff.normalized;
+        }
+        acceleration += away * 0.5f;
+
+        transform.eulerAngles = new Vector3(0, 0, Mathf.Rad2Deg * -Mathf.Atan2(_velocity.x, _velocity.y));
+        transform.position += (Vector3)_velocity * Time.deltaTime;
         planet.Tree.Points[TreeIndex] = transform.position;
+
+        // var angle = planet.GetAngle(transform.position);
+        // var forwardAngle = planet.GetAngle(transform.forward);
+
+        // Get distance from planet
+        // var distance = Vector2.Distance(transform.position, planet.transform.position) - planet.Size / 100f;
+        // var maxDistance = 1f;
+        // var minDistance = 0.2f;
+
+        // bool isTooFar = distance > maxDistance;
+        // bool isTooClose = distance < minDistance;
+
+        // var steerTarget = Vector3.zero;
+
+        // If incorrect distance, rotate
+        // if (isTooFar || isTooClose)
+        // {
+        // var directionToPlanet = (planet.transform.position - transform.position).normalized;
+        // var projectionOnRight = Vector3.Dot(directionToPlanet, transform.right);
+        // var planetOnRight = projectionOnRight < 0;
+
+        // steerTarget = planetOnRight ? transform.right : -transform.right;
+
+        // var direction = planetOnRight == isTooFar ? 1 : -1;
+        // var turningSpeed = 200f;
+        // if (isTooClose) turningSpeed *= 3;
+        // else if (isTooFar) turningSpeed *= (distance - maxDistance);
+        // transform.Rotate(new Vector3(0, 0, direction * turningSpeed * Time.deltaTime));
+
+        // if (steerTarget == Vector3.zero)
+        //     steerTarget = transform.up;
+
+
+        // var angle = new Vector3(0, 0, Mathf.Rad2Deg * -Mathf.Atan2(steerTarget.x, steerTarget.y));
+        // transform.eulerAngles = Vector3.Lerp(transform.eulerAngles, angle, Time.deltaTime * 2f);
+
+        // transform.position += transform.up * Time.deltaTime;
     }
 
     public void OnDrawGizmos()
     {
-        // Draw a line forward
-        Gizmos.color = Color.red;
-        Gizmos.DrawLine(transform.position, transform.position + transform.up);
+        var surfaceTarget = planet.GetSurfacePosition(planet.GetAngle((Vector2)transform.position + _velocity), 0.4f);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawLine(transform.position, surfaceTarget);
+
+        var velocityPosition = transform.position + (Vector3)_velocity;
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, velocityPosition);
+
+        // Draw the angle from the planet center to the unit
+        // var angle = planet.GetAngle(transform.position);
+        // // Draw the angle from the unit's immediate forward to the planet center
+        // var forwardAngle = planet.GetAngle(transform.position - transform.up);
+        // var distance = Vector2.Distance(transform.position, planet.transform.position) - planet.Size / 100f;
+
+        // Gizmos.color = Color.red;
+        // Gizmos.DrawLine(planet.transform.position, planet.GetSurfacePosition(angle, distance));
+        // Gizmos.color = Color.green;
+        // Gizmos.DrawLine(planet.transform.position, planet.GetSurfacePosition(forwardAngle, distance));
+
+        // // Draw a line forward
+        // Gizmos.color = Color.red;
+        // Gizmos.DrawLine(transform.position, transform.position + transform.up);
     }
 
     private void OnDestroy()
@@ -131,4 +202,6 @@ public class Unit : MonoBehaviour
         lineRenderer.positionCount = mesh.vertices.Length;
         lineRenderer.SetPositions(mesh.vertices);
     }
+
+
 }

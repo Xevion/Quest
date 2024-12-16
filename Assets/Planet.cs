@@ -4,6 +4,7 @@ using UnityEngine;
 using DataStructures.ViliWonka.KDTree;
 using System;
 using System.Text;
+using UnityEditor.Search;
 
 public class Planet : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class Planet : MonoBehaviour
     private LineRenderer _lineRenderer;
     private CircleCollider2D _circleCollider;
     private Network _network;
+    public KDQuery Query => _query;
     private KDQuery _query;
     public KDTree Tree => _tree;
     private KDTree _tree;
@@ -35,10 +37,8 @@ public class Planet : MonoBehaviour
 
     void Start()
     {
-        while (_units.Count < 10)
+        while (_units.Count < 16)
             SpawnUnit();
-
-        InvokeRepeating("ChangeUnits", 0.0f, 1f);
     }
 
     void OnMouseDown()
@@ -53,9 +53,9 @@ public class Planet : MonoBehaviour
         return (Vector2)transform.position + new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
     }
 
-    public float GetUnitAngle(Unit unit)
+    public float GetAngle(Vector2 position)
     {
-        var angle = Mathf.Atan2(unit.transform.position.y, unit.transform.position.x) * Mathf.Rad2Deg;
+        var angle = Mathf.Atan2(position.y - transform.position.y, position.x - transform.position.x) * Mathf.Rad2Deg;
         return angle < 0 ? angle + 360 : angle;
     }
 
