@@ -101,9 +101,9 @@ public class Unit : MonoBehaviour
         // Unit is just a simple triangle
         var vertices = new[]
         {
-            new Vector2(0, 0),
-            new Vector2(0.5f, 1),
-            new Vector2(1, 0)
+            new Vector2(-0.5f, 0),
+            new Vector2(0f, 1.4f),
+            new Vector2(0.5f, 0)
         };
 
         vertices = vertices.Select(v => v * Size / 100f).ToArray();
