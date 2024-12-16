@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class Unit : MonoBehaviour
 {
@@ -9,6 +11,9 @@ public class Unit : MonoBehaviour
     public Color fillColor = Color.white;
     public Color edgeColor = Color.white;
     public float Size;
+    public int TreeIndex;
+    private float RotationSpeed;
+    private float BobbingOffset;
 
     void Start()
     {
@@ -19,15 +24,28 @@ public class Unit : MonoBehaviour
         {
             x = (Random.value > 0.5f ? 1 : -1) * 32 * Random.Range(0.8f, 1.2f),
         };
+        RotationSpeed = Random.value > 0.5f ? 1 : -1 * Random.Range(0.8f, 1.2f) * 4f;
+        BobbingOffset = Random.Range(0, (float)(2 * Math.PI));
 
-        transform.position = planet.GetSurfacePosition(Random.Range(0, 360), 0.4f);
+        transform.position = planet.GetSurfacePosition(Random.Range(0, 360), 0.3f);
 
     }
 
     void Update()
     {
+        // Rotate itself slightly
+        transform.Rotate(new Vector3(0, 0, Time.deltaTime * RotationSpeed));
         transform.RotateAround(planet.transform.position, Vector3.forward, planetaryVelocity.x * Time.deltaTime);
-        transform.position = Vector2.MoveTowards(transform.position, planet.transform.position, planetaryVelocity.y * Time.deltaTime);
+
+        // Bobbing motion
+        var unitAngle = planet.GetUnitAngle(this);
+        var targetDistance = (Mathf.Sin(BobbingOffset + Time.time) + 1) / 2;
+        targetDistance = Mathf.Lerp(0.35f, 0.8f, targetDistance);
+        if (TreeIndex == 0)
+            Debug.Log(targetDistance);
+        transform.position = planet.GetSurfacePosition(unitAngle, targetDistance);
+
+        planet.Tree.Points[TreeIndex] = transform.position;
     }
 
     private void OnDestroy()

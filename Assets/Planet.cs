@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using DataStructures.ViliWonka.KDTree;
+using System;
+using System.Text;
 
 public class Planet : MonoBehaviour
 {
@@ -8,7 +11,10 @@ public class Planet : MonoBehaviour
     private LineRenderer _lineRenderer;
     private CircleCollider2D _circleCollider;
     private Network _network;
-    private HashSet<Unit> _units;
+    private KDQuery _query;
+    public KDTree Tree => _tree;
+    private KDTree _tree;
+    private List<Unit> _units;
 
     [SerializeField] public HashSet<Planet> neighbors;
 
@@ -22,11 +28,14 @@ public class Planet : MonoBehaviour
     {
         _lineRenderer = gameObject.GetComponent<LineRenderer>();
         _network = FindObjectOfType<Network>();
-        _units = new HashSet<Unit>();
-    }
+        _units = new List<Unit>();
+        _query = new KDQuery();
+        _tree = new KDTree();
 
-    void OnEnable()
-    {
+        while (_units.Count < 10)
+            SpawnUnit();
+
+        InvokeRepeating("ChangeUnits", 0.0f, 1f);
     }
 
     void OnMouseDown()
@@ -41,15 +50,74 @@ public class Planet : MonoBehaviour
         return new Vector2(Mathf.Cos(theta), Mathf.Sin(theta)) * radius;
     }
 
+    public float GetUnitAngle(Unit unit)
+    {
+        var angle = Mathf.Atan2(unit.transform.position.y, unit.transform.position.x) * Mathf.Rad2Deg;
+        return angle < 0 ? angle + 360 : angle;
+    }
+
     void SpawnUnit()
     {
         var unitPrefab = Resources.Load<GameObject>("BaseUnit");
         var unitObject = Instantiate(unitPrefab);
         unitObject.transform.position = transform.position;
         unitObject.transform.parent = transform;
-        _units.Add(unitObject.GetComponent<Unit>());
-        Debug.Log("Spawned unit " + unitObject.GetComponent<Unit>().GetHashCode());
+        var unit = unitObject.GetComponent<Unit>();
+        _units.Add(unit);
         unitObject.name = "Unit " + _units.Count;
+
+
+        _tree.SetCount(_tree.Count + 1);
+        var index = _tree.Count - 1;
+        unit.TreeIndex = index;
+
+        _tree.Points[index] = new Vector2(unitObject.transform.position.x, unitObject.transform.position.y);
+        _tree.Rebuild();
+
+    }
+
+    void FixedUpdate()
+    {
+    }
+
+    void ChangeUnits()
+    {
+        // Delete 3 units
+        for (int i = 0; i < 3; i++)
+        {
+            if (_units.Count == 0) break;
+            var unit = _units[0];
+            Destroy(unit.gameObject);
+        }
+
+        // Add 4 units
+        for (int i = 0; i < 4; i++)
+        {
+            SpawnUnit();
+        }
+
+    }
+
+    void OnDrawGizmos()
+    {
+        if (_units.Count == 0) return;
+
+        var origin = _units[0];
+        // Draw sphere on first unit
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(origin.transform.position, 0.1f);
+
+        var results = new List<int>();
+        var resultDistances = new List<float>();
+        _query.KNearest(_tree, origin.transform.position, 2, results, resultDistances);
+
+        if (results.Count < 2) return;
+
+        var closestUnit = results[0];
+
+        // Draw line to closest unit
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(origin.transform.position, _tree.Points[closestUnit]);
     }
 
     bool IsConnected(Planet other)
@@ -64,6 +132,7 @@ public class Planet : MonoBehaviour
 
     public void UnitDestroyed(Unit unit)
     {
+        _tree.Points[unit.TreeIndex] = new Vector2(float.MaxValue, float.MaxValue);
         _units.Remove(unit);
     }
 
