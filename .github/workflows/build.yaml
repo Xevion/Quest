@@ -1,0 +1,61 @@
+name: Build Unity Project
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        unityVersion:
+          - 2022.3.42f1
+        targetPlatform:
+          # - WebGL
+          - StandaloneLinux64
+          - StandaloneWindows64
+          # - StandaloneOSX
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Unity builds take some time, so we do some caching to make builds faster
+      - uses: actions/cache@v4
+        with:
+          path: ./Library/
+          key: Library-Rebirth-${{ matrix.unityVersion }}-${{ matrix.targetPlatform }}-${{ hashFiles('./ProjectSettings/ProjectSettings.asset') }}
+          restore-keys: |
+            Library-Rebirth-${{ matrix.unityVersion }}-${{ hashFiles('./ProjectSettings/ProjectSettings.asset') }}
+            Library-Rebirth-${{ matrix.unityVersion }}-
+            Library-Rebirth-
+
+      - name: Build Unity Project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ./
+          unityVersion: ${{ matrix.unityVersion }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+
+      - name: Fix Build Folder
+        run: |
+          sudo rm -rf ./build/${{ matrix.targetPlatform }}/Rebirth_BurstDebugInformation_DoNotShip/
+          # sudo chown -R $USER:$USER ./build
+          # sudo chmod -R 777 ./build
+          sudo mv ./build/${{ matrix.targetPlatform}}/ ./build/Rebirth/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rebirth-${{ matrix.targetPlatform }}
+          path: build/
