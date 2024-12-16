@@ -28,26 +28,55 @@ public class Unit : MonoBehaviour
         BobbingOffset = Random.Range(0, (float)(2 * Math.PI));
 
         transform.position = planet.GetSurfacePosition(Random.Range(0, 360), 0.3f);
-
+        Debug.Log($"{name} belongs to {planet.name}");
     }
 
     void Update()
     {
         // Rotate itself slightly
         transform.Rotate(new Vector3(0, 0, Time.deltaTime * RotationSpeed));
-        transform.RotateAround(planet.transform.position, Vector3.forward, planetaryVelocity.x * Time.deltaTime);
 
-        // Bobbing motion
-        var unitAngle = planet.GetUnitAngle(this);
-        var targetDistance = (Mathf.Sin(BobbingOffset + Time.time) + 1) / 2;
-        targetDistance = Mathf.Lerp(0.35f, 0.8f, targetDistance);
-        transform.position = planet.GetSurfacePosition(unitAngle, targetDistance);
+        transform.Translate(Vector3.up * Time.deltaTime);
+
+        // Get distance from planet
+        var distance = Vector2.Distance(transform.position, planet.transform.position) - planet.Size / 100f;
+        var maxDistance = 1f;
+        var minDistance = 0.2f;
+
+        bool isTooFar = distance > maxDistance;
+        bool isTooClose = distance < minDistance;
+
+        // If incorrect distance, rotate
+        if (isTooFar || isTooClose)
+        {
+            var directionToPlanet = (planet.transform.position - transform.position).normalized;
+            var projectionOnRight = Vector3.Dot(directionToPlanet, transform.right);
+            var planetOnRight = projectionOnRight < 0;
+
+            var direction = planetOnRight == isTooFar ? 1 : -1;
+            var turningSpeed = 200f;
+            if (isTooClose) turningSpeed *= 3;
+            else if (isTooFar) turningSpeed *= (distance - maxDistance);
+            transform.Rotate(new Vector3(0, 0, direction * turningSpeed * Time.deltaTime));
+
+            // var angle = Mathf.Atan2(transform.position.y, transform.position.x) * Mathf.Rad2Deg;
+            // angle += Random.Range(-10, 10);
+            // transform.rotation = Quaternion.Euler(0, 0, angle);
+        }
 
         planet.Tree.Points[TreeIndex] = transform.position;
     }
 
+    public void OnDrawGizmos()
+    {
+        // Draw a line forward
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(transform.position, transform.position + transform.up);
+    }
+
     private void OnDestroy()
     {
+        if (planet == null) return;
         planet.UnitDestroyed(this);
     }
 

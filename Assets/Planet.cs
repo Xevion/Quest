@@ -31,7 +31,10 @@ public class Planet : MonoBehaviour
         _units = new List<Unit>();
         _query = new KDQuery();
         _tree = new KDTree();
+    }
 
+    void Start()
+    {
         while (_units.Count < 10)
             SpawnUnit();
 
@@ -40,6 +43,7 @@ public class Planet : MonoBehaviour
 
     void OnMouseDown()
     {
+        Debug.Log($"Clicked on {name}");
         SpawnUnit();
     }
 
@@ -61,6 +65,7 @@ public class Planet : MonoBehaviour
         var unitPrefab = Resources.Load<GameObject>("BaseUnit");
         var unitObject = Instantiate(unitPrefab);
         unitObject.transform.position = transform.position;
+        Debug.Log($"Spawned unit at {unitObject.transform.position} for planet {name}");
         unitObject.transform.parent = transform;
         var unit = unitObject.GetComponent<Unit>();
         _units.Add(unit);
@@ -82,6 +87,8 @@ public class Planet : MonoBehaviour
 
     void ChangeUnits()
     {
+        if (_units.Count < 50) return;
+
         // Delete 3 units
         for (int i = 0; i < 3; i++)
         {
