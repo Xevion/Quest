@@ -41,8 +41,6 @@ public class Unit : MonoBehaviour
         var unitAngle = planet.GetUnitAngle(this);
         var targetDistance = (Mathf.Sin(BobbingOffset + Time.time) + 1) / 2;
         targetDistance = Mathf.Lerp(0.35f, 0.8f, targetDistance);
-        if (TreeIndex == 0)
-            Debug.Log(targetDistance);
         transform.position = planet.GetSurfacePosition(unitAngle, targetDistance);
 
         planet.Tree.Points[TreeIndex] = transform.position;

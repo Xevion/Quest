@@ -98,7 +98,6 @@ public class CameraControl : MonoBehaviour
             }
             // We need to apply the delta between the initial click position and the current mouse position to the camera's position
             var worldDelta = camera.ScreenToWorldPoint(Input.mousePosition) - camera.ScreenToWorldPoint(_panningClickPosition.Value);
-            Debug.Log($"worldDelta: {worldDelta} screenDelta: {(Vector2)Input.mousePosition - _panningClickPosition.Value}");
 
             transform.position = new Vector3(
                 _panningCameraPosition.Value.x - worldDelta.x,
